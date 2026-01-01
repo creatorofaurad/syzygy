@@ -1,0 +1,26 @@
+[package]
+name = "syzygy-topology"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sovereign Architecture"]
+description = "Neuro-Symbolic Topological Compiler for Deterministic Constraint Graph Reduction"
+
+[dependencies]
+smallvec = "1.13"
+bitflags = "2.5"
+hashbrown = "0.14"
+parking_lot = "0.12"
+
+[lib]
+name = "syzygy_topology"
+path = "src/lib.rs"
+crate-type = ["lib", "staticlib", "cdylib"]
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+debug = false
+
+# opt-level = 3
