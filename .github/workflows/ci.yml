@@ -1,0 +1,32 @@
+name: SYZYGY Continuous Integration & Verification Matrix
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  verification-matrix:
+    name: Formal Proofs & Hardware Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Monorepo
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies & QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 build-essential
+
+      - name: Set up Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Benchmark Dependencies
+        run: pip install numpy
+
+      - name: Execute Automated Verification & Hardware Benchmark Matrix
+        run: bash scripts/benchmark.sh
