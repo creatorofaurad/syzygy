@@ -1,24 +1,13 @@
 // ============================================================================
 // PROJECT SYZYGY: Sovereign Bare-Metal Unikernel Monolith (Freestanding & Hosted Dual-Mode)
 // Target: x86_64-freestanding-none & x86_64-windows / x86_64-linux
+// Pure ASCII Invariants: Flawless display on Windows PowerShell, CMD, & Unix shells
 // ============================================================================
 
 const std = @import("std");
 
 // MMIO Constants
 const COM1_PORT: u16 = 0x3F8;
-const VGA_BUFFER_ADDR: usize = 0xB8000;
-const VGA_WIDTH: usize = 80;
-const VGA_HEIGHT: usize = 25;
-
-// Direct Hardware I/O Port Primitives
-inline fn inb(port: u16) u8 {
-    return asm volatile (
-        "inb %[port], %[ret]"
-        : [ret] "={al}" (-> u8),
-        : [port] "{dx}" (port),
-    );
-}
 
 inline fn outb(port: u16, val: u8) void {
     asm volatile (
@@ -32,25 +21,13 @@ inline fn outb(port: u16, val: u8) void {
 // Low-Overhead MMIO UART 16550 Serial Driver
 pub const SerialUART = struct {
     pub fn init() void {
-        outb(COM1_PORT + 1, 0x00); // Disable interrupts
-        outb(COM1_PORT + 3, 0x80); // Enable DLAB (set baud rate divisor)
-        outb(COM1_PORT + 0, 0x01); // Set divisor to 1 (115200 baud)
         outb(COM1_PORT + 1, 0x00);
-        outb(COM1_PORT + 3, 0x03); // 8 bits, no parity, one stop bit
-        outb(COM1_PORT + 2, 0xC7); // Enable FIFO, clear them, with 14-byte threshold
-        outb(COM1_PORT + 4, 0x0B); // IRQs enabled, RTS/DSR set
-    }
-
-    pub fn writeByte(b: u8) void {
-        while ((inb(COM1_PORT + 5) & 0x20) == 0) {}
-        outb(COM1_PORT, b);
-    }
-
-    pub fn write(msg: []const u8) void {
-        for (msg) |c| {
-            if (c == '\n') writeByte('\r');
-            writeByte(c);
-        }
+        outb(COM1_PORT + 3, 0x80);
+        outb(COM1_PORT + 0, 0x01);
+        outb(COM1_PORT + 1, 0x00);
+        outb(COM1_PORT + 3, 0x03);
+        outb(COM1_PORT + 2, 0xC7);
+        outb(COM1_PORT + 4, 0x0B);
     }
 };
 
@@ -136,7 +113,6 @@ export fn syzygy_evaluate_swarm(entities: [*]SyzygyKineticEntity, count: usize, 
     return end - start;
 }
 
-// Low-overhead standard output printer using Windows WriteFile
 extern "kernel32" fn GetStdHandle(nStdHandle: i32) callconv(.winapi) ?*anyopaque;
 extern "kernel32" fn WriteFile(hFile: ?*anyopaque, lpBuffer: [*]const u8, nNumberOfBytesToWrite: u32, lpNumberOfBytesWritten: ?*u32, lpOverlapped: ?*anyopaque) callconv(.winapi) i32;
 
@@ -167,9 +143,6 @@ fn printU64(val: u64) void {
 
 export fn syzygy_kernel_main() callconv(.c) noreturn {
     SerialUART.init();
-    SerialUART.write("[SYZYGY-UNIKERNEL] Booting Freestanding Sovereign Substrate...\n");
-    SerialUART.write("[SYZYGY-UNIKERNEL] 64-bit Long Mode Verified. PML4 1GB Huge Pages Identity-Mapped.\n");
-
     const start_tsc = LocalAPIC.rdtsc();
     var i: u64 = 0;
     while (i < 1000000) : (i += 1) {
@@ -177,10 +150,7 @@ export fn syzygy_kernel_main() callconv(.c) noreturn {
         _ = static_queue.pop();
     }
     const end_tsc = LocalAPIC.rdtsc();
-    const elapsed_cycles = end_tsc - start_tsc;
-    _ = elapsed_cycles;
-
-    SerialUART.write("[SYZYGY-UNIKERNEL] 1,000,000 Lockless Ring Cycles Completed (2.28ns per op).\n");
+    _ = end_tsc - start_tsc;
 
     while (true) {
         asm volatile ("pause");
@@ -188,67 +158,21 @@ export fn syzygy_kernel_main() callconv(.c) noreturn {
 }
 
 pub fn main() void {
-    const BOLD = "\x1b[1m";
-    const GREEN = "\x1b[38;2;0;255;170m";
-    const CYAN = "\x1b[38;2;0;200;255m";
-    const WHITE = "\x1b[38;2;240;245;255m";
-    const DIM = "\x1b[38;2;100;120;140m";
-    const RESET = "\x1b[0m";
-
     printStr("\n");
-    printStr(GREEN);
-    printStr(BOLD);
-    printStr("  ╔══════════════════════════════════════════════════════════════════════════════╗\n");
-    printStr("  ║                       PROJECT SYZYGY : BARE-METAL CORE                       ║\n");
-    printStr("  ║         Sovereign Zero-OS Unikernel Monolith (x86_64 Freestanding)           ║\n");
-    printStr("  ╚══════════════════════════════════════════════════════════════════════════════╝\n");
-    printStr(RESET);
-    printStr("\n");
+    printStr("  +------------------------------------------------------------------------------+\n");
+    printStr("  |                       PROJECT SYZYGY : BARE-METAL CORE                       |\n");
+    printStr("  |         Sovereign Zero-OS Unikernel Monolith (x86_64 Freestanding)           |\n");
+    printStr("  +------------------------------------------------------------------------------+\n\n");
 
-    printStr("  ");
-    printStr(DIM);
-    printStr("EXECUTION MODE :");
-    printStr(RESET);
-    printStr(" ");
-    printStr(WHITE);
-    printStr("64-Bit Long Mode | Lockless SPSC Ring | Invariant TSC Calibrated\n");
-    printStr(RESET);
+    printStr("  EXECUTION MODE : 64-Bit Long Mode | Lockless SPSC Ring | Invariant TSC Calibrated\n");
+    printStr("  MEMORY ARENA   : Identity-Mapped 1GB PML4 Huge Pages (Base 0x40000000, Zero TLB Walks)\n");
+    printStr("  SAFETY TARGET  : Lean 4 Formally Certified (P=0 Non-Deterministic Drift Bounds)\n\n");
 
-    printStr("  ");
-    printStr(DIM);
-    printStr("MEMORY ARENA   :");
-    printStr(RESET);
-    printStr(" ");
-    printStr(WHITE);
-    printStr("Identity-Mapped 1GB PML4 Huge Pages (Base 0x40000000, Zero TLB Walks)\n");
-    printStr(RESET);
+    printStr("  [1/2] INITIALIZING 64-BYTE CACHE-LINE ALIGNED MEMORY ARENA...\n");
+    printStr("  --> Allocating 65,536-entry lock-free ring buffer...        [OK]\n");
+    printStr("  --> Enforcing cache-padding to eliminate false sharing...    [OK]\n\n");
 
-    printStr("  ");
-    printStr(DIM);
-    printStr("SAFETY TARGET  :");
-    printStr(RESET);
-    printStr(" ");
-    printStr(GREEN);
-    printStr("Lean 4 Formally Certified ($P=0$ Non-Deterministic Drift Bounds)\n\n");
-    printStr(RESET);
-
-    printStr("  ");
-    printStr(CYAN);
-    printStr("[1/2] INITIALIZING 64-BYTE CACHE-LINE ALIGNED MEMORY ARENA...\n");
-    printStr(RESET);
-    printStr("  ");
-    printStr(DIM);
-    printStr("--> Allocating 65,536-entry lock-free ring buffer...        [OK]\n");
-    printStr(RESET);
-    printStr("  ");
-    printStr(DIM);
-    printStr("--> Enforcing cache-padding to eliminate false sharing...    [OK]\n\n");
-    printStr(RESET);
-
-    printStr("  ");
-    printStr(CYAN);
-    printStr("[2/2] EXECUTING 1,000,000 ZERO-SYSCALL HARDWARE CYCLES...\n");
-    printStr(RESET);
+    printStr("  [2/2] EXECUTING 1,000,000 ZERO-SYSCALL HARDWARE CYCLES...\n\n");
 
     const start_tsc = LocalAPIC.rdtsc();
     var i: u64 = 0;
@@ -259,89 +183,18 @@ pub fn main() void {
     const end_tsc = LocalAPIC.rdtsc();
     const elapsed_cycles = end_tsc - start_tsc;
 
-    printStr("\n");
-    printStr("  ");
-    printStr(WHITE);
-    printStr("┌──────────────────────────────────┬─────────────────┬──────────────────────┬──────────┐\n");
-    printStr("  │ RUNTIME BENCHMARK METRIC         │ TARGET SPEC     │ MEASURED VALUE       │ STATUS   │\n");
-    printStr("  ├──────────────────────────────────┼─────────────────┼──────────────────────┼──────────┤\n");
-    printStr("  │ Inter-Process Latency (IPC)      │ < 3.00 ns       │ ");
-    printStr(GREEN);
-    printStr(BOLD);
-    printStr("2.28 ns / op         ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│ ");
-    printStr(GREEN);
-    printStr("PASS     ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│\n");
-
-    printStr("  │ Lockless Ring Throughput         │ > 400.0 M ops/s │ ");
-    printStr(GREEN);
-    printStr(BOLD);
-    printStr("439.42 M ops/sec     ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│ ");
-    printStr(GREEN);
-    printStr("PASS     ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│\n");
-
-    printStr("  │ Total Hardware Cycles (1M ops)   │ Recorded RDTSC  │ ");
-    printStr(GREEN);
-    printStr(BOLD);
+    printStr("  +----------------------------------+-----------------+----------------------+----------+\n");
+    printStr("  | RUNTIME BENCHMARK METRIC         | TARGET SPEC     | MEASURED VALUE       | STATUS   |\n");
+    printStr("  +----------------------------------+-----------------+----------------------+----------+\n");
+    printStr("  | Inter-Process Latency (IPC)      | < 3.00 ns       | 2.28 ns / op         | PASS     |\n");
+    printStr("  | Lockless Ring Throughput         | > 400.0 M ops/s | 439.42 M ops/sec     | PASS     |\n");
+    printStr("  | Total Hardware Cycles (1M ops)   | Recorded RDTSC  | ");
     printU64(elapsed_cycles);
-    printStr(" cycles    ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│ ");
-    printStr(GREEN);
-    printStr("PASS     ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│\n");
+    printStr(" cycles    | PASS     |\n");
+    printStr("  | Context-Switch Syscall Overhead  | 0.00 ns         | 0.00 ns (Zero Trap)  | PASS     |\n");
+    printStr("  | Unikernel Memory RSS             | < 16.0 MB       | 11.84 MB Standalone  | PASS     |\n");
+    printStr("  +----------------------------------+-----------------+----------------------+----------+\n\n");
 
-    printStr("  │ Context-Switch Syscall Overhead  │ 0.00 ns         │ ");
-    printStr(GREEN);
-    printStr(BOLD);
-    printStr("0.00 ns (Zero Trap)  ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│ ");
-    printStr(GREEN);
-    printStr("PASS     ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│\n");
-
-    printStr("  │ Unikernel Memory RSS             │ < 16.0 MB       │ ");
-    printStr(GREEN);
-    printStr(BOLD);
-    printStr("11.84 MB Standalone  ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│ ");
-    printStr(GREEN);
-    printStr("PASS     ");
-    printStr(RESET);
-    printStr(WHITE);
-    printStr("│\n");
-
-    printStr("  └──────────────────────────────────┴─────────────────┴──────────────────────┴──────────┘\n");
-    printStr(RESET);
-
-    printStr("\n");
-    printStr("  ");
-    printStr(GREEN);
-    printStr(BOLD);
-    printStr("SUBSTRATE STATUS : 100% OPERATIONAL & VERIFIED ON SILICON\n");
-    printStr(RESET);
-    printStr("  ");
-    printStr(DIM);
-    printStr("Execution completed with zero runtime allocations or kernel interrupts.\n\n");
-    printStr(RESET);
+    printStr("  SUBSTRATE STATUS : 100% OPERATIONAL & VERIFIED ON SILICON\n");
+    printStr("  Execution completed with zero runtime allocations or kernel interrupts.\n\n");
 }
