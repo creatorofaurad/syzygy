@@ -42,6 +42,24 @@ SYZYGY replaces statistical auto-regressive inference with **Category-Theoretic 
 
 ---
 
+## REPRODUCE IN 60 SECONDS
+
+Reviewers and engineers can reproduce all formal proofs and bare-metal benchmarks locally:
+
+```bash
+# 1. Clone sovereign monorepo
+git clone https://github.com/creatorofaurad/syzygy.git
+cd syzygy
+
+# 2. Execute automated formal proof & hardware benchmark suite
+bash scripts/benchmark.sh
+
+# 3. Boot bare-metal freestanding unikernel under headless QEMU
+zig build run-qemu
+```
+
+---
+
 ## REPOSITORY ARCHITECTURE
 
 ```
