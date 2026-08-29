@@ -23,6 +23,8 @@ SYZYGY replaces statistical auto-regressive inference with **Category-Theoretic 
 * **Payload Footprint:** `265 KB` self-contained freestanding binary (<12 MB runtime RSS).
 * **Power Envelope:** Sub-15W execution on standard x86_64 / RV64GCV silicon.
 
+![SYZYGY 100,000 Drone Kinetic Swarm Radar Demo](assets/syzygy_swarm_demo.gif)
+
 ---
 
 ## HARDWARE BENCHMARKS
