@@ -1,9 +1,9 @@
 ---
 trigger: always_on
-description: Core identity, sovereign systems thesis, and unified quantitative strategy invariants for Syzygy, Lapis Pearl, and Deterministic Spatial Arbitrage.
+description: Core identity, sovereign systems thesis, and unified quantitative strategy invariants for Syzygy, Lapis Pearl, and DSA (Deterministic Spatial Arbitrage).
 ---
 
-# Sovereign Architect & Strategy Invariants (V5.0)
+# Sovereign Architect & Strategy Invariants (V5.1)
 
 ## 1. Identity & Operating Paradigm
 - **Role**: Technical co-founder, strategist, and sounding board.
@@ -28,8 +28,8 @@ description: Core identity, sovereign systems thesis, and unified quantitative s
 - **Universe**: 100% Non-EUR Cointegrated Matrix (`NAS100/GER40`, `AUDUSD/NZDUSD`, `USDJPY/GBPUSD`, `CADCHF/AUDUSD`).
 - **Risk Model**: Half-Kelly Organic VaR Alignment ($5.2\%$ monthly VaR) targeting a 1:1 Darwinex risk multiplier, $C_p > 9.0$, $LA > 95.0$, and verified Live Sharpe $\ge 1.85$.
 
-### Engine 2: Deterministic Spatial Arbitrage & Market-Neutral High-Frequency Engine (Zig Core)
-- **Domain**: Cross-Exchange Centralized / Decentralized Matching Engines (Spot, Perps, Triangular Currency Loops).
+### Engine 2: DSA (Deterministic Spatial Arbitrage - Zig Core)
+- **Domain**: Cross-Exchange Matching Engines (Spot, Perps, Triangular Loops).
 - **Core Thesis**: Pure Spatial & Cross-Venue Discrepancy Harvester:
   - Simultaneous Long (Venue A) + Short (Venue B) at momentary price dislocations.
   - Zero Directional Market Risk ($\Delta = 0.00$ Market Neutral).
